@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#111827" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Climb Log" />
+  <title>Climb Log</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="app-shell">
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">WALLS 6–19</p>
+        <h1>Climb Log</h1>
+      </div>
+      <button id="installBtn" class="secondary hidden" type="button">Install</button>
+    </header>
+
+    <nav class="tabs" aria-label="Main navigation">
+      <button class="tab active" data-tab="log" type="button">Log</button>
+      <button class="tab" data-tab="week" type="button">This Week</button>
+      <button class="tab" data-tab="history" type="button">History</button>
+      <button class="tab" data-tab="settings" type="button">Backup</button>
+    </nav>
+
+    <section id="tab-log" class="panel active">
+      <form id="climbForm" class="card stack">
+        <div class="field-group">
+          <label for="climbDate">Date & time</label>
+          <input id="climbDate" name="date" type="datetime-local" required />
+        </div>
+
+        <div class="field-group">
+          <span class="label">Wall</span>
+          <div id="wallPicker" class="button-grid wall-grid" role="group" aria-label="Wall number"></div>
+          <input id="wallValue" name="wall" type="hidden" required />
+        </div>
+
+        <div class="field-group">
+          <label for="gradeSelect">Grade</label>
+          <select id="gradeSelect" name="grade" required></select>
+        </div>
+
+        <div class="field-group">
+          <span class="label">Route color</span>
+          <div id="colorPicker" class="color-grid" role="group" aria-label="Route color"></div>
+          <input id="colorValue" name="color" type="hidden" required />
+        </div>
+
+        <div class="field-group">
+          <span class="label">Result</span>
+          <div id="resultPicker" class="segmented" role="group" aria-label="Climb result">
+            <button type="button" data-result="sent">Sent</button>
+            <button type="button" data-result="hung">Hung / Fell</button>
+            <button type="button" data-result="project">Project</button>
+          </div>
+          <input id="resultValue" name="result" type="hidden" required />
+        </div>
+
+        <div class="field-group">
+          <div class="range-label-row">
+            <label for="difficulty">How hard did it feel?</label>
+            <output id="difficultyOut" for="difficulty">3 / 5</output>
+          </div>
+          <input id="difficulty" name="difficulty" type="range" min="1" max="5" step="1" value="3" />
+          <div class="range-ends"><span>Easy</span><span>Limit</span></div>
+        </div>
+
+        <div class="field-group">
+          <div class="range-label-row">
+            <label for="confidence">How confident did you feel?</label>
+            <output id="confidenceOut" for="confidence">3 / 5</output>
+          </div>
+          <input id="confidence" name="confidence" type="range" min="1" max="5" step="1" value="3" />
+          <div class="range-ends"><span>Shaky</span><span>Solid</span></div>
+        </div>
+
+        <div class="field-group">
+          <label for="notes">Notes <span class="muted">(optional)</span></label>
+          <textarea id="notes" name="notes" rows="3" placeholder="Beta, crux, pump, technique..."></textarea>
+        </div>
+
+        <button class="primary save-button" type="submit">Save climb</button>
+        <p id="saveMessage" class="status-message" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section id="tab-week" class="panel">
+      <div class="summary-grid">
+        <article class="stat-card"><span id="weekTotal" class="stat">0</span><span>climbs</span></article>
+        <article class="stat-card"><span id="weekSends" class="stat">0</span><span>sends</span></article>
+        <article class="stat-card"><span id="weekRate" class="stat">—</span><span>send rate</span></article>
+        <article class="stat-card"><span id="weekHardest" class="stat">—</span><span>hardest send</span></article>
+      </div>
+      <div class="card">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">MONDAY–SUNDAY</p>
+            <h2 id="weekRange">This week</h2>
+          </div>
+        </div>
+        <div id="weekEntries" class="entry-list empty-state">No climbs logged this week.</div>
+      </div>
+    </section>
+
+    <section id="tab-history" class="panel">
+      <div class="card">
+        <div class="section-heading history-heading">
+          <div>
+            <p class="eyebrow">ALL ENTRIES</p>
+            <h2>History</h2>
+          </div>
+          <button id="clearFilters" type="button" class="text-button">Reset filters</button>
+        </div>
+        <div class="filters">
+          <select id="filterWall" aria-label="Filter by wall">
+            <option value="">All walls</option>
+          </select>
+          <select id="filterGrade" aria-label="Filter by grade">
+            <option value="">All grades</option>
+          </select>
+          <select id="filterResult" aria-label="Filter by result">
+            <option value="">All results</option>
+            <option value="sent">Sent</option>
+            <option value="hung">Hung / Fell</option>
+            <option value="project">Project</option>
+          </select>
+        </div>
+        <div id="historyEntries" class="entry-list empty-state">No climbs logged yet.</div>
+      </div>
+    </section>
+
+    <section id="tab-settings" class="panel">
+      <div class="card stack">
+        <div>
+          <p class="eyebrow">BACKUP & RESTORE</p>
+          <h2>Your data stays on this device</h2>
+          <p class="muted body-copy">Export a JSON backup anytime. Importing a backup replaces the current local data only after you confirm.</p>
+        </div>
+        <button id="exportBtn" type="button" class="primary">Export JSON backup</button>
+        <label class="file-button secondary" for="importFile">Choose JSON backup</label>
+        <input id="importFile" type="file" accept="application/json,.json" hidden />
+        <p id="backupMessage" class="status-message" aria-live="polite"></p>
+      </div>
+
+      <div class="card stack danger-zone">
+        <div>
+          <p class="eyebrow">DEVICE STORAGE</p>
+          <h2>Local data</h2>
+          <p id="storageSummary" class="muted body-copy">0 climbs stored.</p>
+        </div>
+        <button id="deleteAllBtn" type="button" class="danger">Delete all local data</button>
+      </div>
+    </section>
+  </main>
+
+  <template id="entryTemplate">
+    <article class="entry-card">
+      <div class="entry-color"></div>
+      <div class="entry-main">
+        <div class="entry-title-row">
+          <strong class="entry-grade"></strong>
+          <span class="entry-result badge"></span>
+        </div>
+        <div class="entry-meta"></div>
+        <div class="entry-ratings"></div>
+        <p class="entry-notes"></p>
+      </div>
+      <button class="delete-entry text-button" type="button" aria-label="Delete climb">Delete</button>
+    </article>
+  </template>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
