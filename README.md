@@ -13,6 +13,8 @@ A local-first climbing tracker designed for iPhone use.
 - Optional notes
 - Current-week summary
 - Full history with filters
+- Existing-record editing from History or This Week
+- Compact date/time control with a reliable Now reset
 - JSON export backup
 - JSON import restore
 - Offline-capable PWA after first load

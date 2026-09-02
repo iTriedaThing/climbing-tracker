@@ -33,6 +33,7 @@ const RESULT_LABELS = {
 
 let entries = loadEntries();
 let deferredInstallPrompt = null;
+let editingEntryId = null;
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -160,6 +161,52 @@ function selectResult(value) {
   $$('#resultPicker [data-result]').forEach((btn) => btn.classList.toggle('selected', btn.dataset.result === value));
 }
 
+function setDateTimeToNow() {
+  $('#climbDate').value = localDateTimeValue();
+}
+
+function switchToTab(name) {
+  $$('.tab').forEach((item) => item.classList.toggle('active', item.dataset.tab === name));
+  $$('.panel').forEach((panel) => panel.classList.toggle('active', panel.id === `tab-${name}`));
+}
+
+function resetEntryForm({ keepSelections = true } = {}) {
+  editingEntryId = null;
+  setDateTimeToNow();
+  $('#notes').value = '';
+  $('#saveClimbBtn').textContent = 'Save climb';
+  $('#cancelEditBtn').classList.add('hidden');
+  if (!keepSelections) {
+    selectWall('6');
+    $('#gradeSelect').value = '5.9';
+    selectColor(COLORS[0].value);
+    selectResult('sent');
+    $('#difficulty').value = '3';
+    $('#confidence').value = '3';
+  }
+  $('#difficultyOut').value = `${$('#difficulty').value} / 5`;
+  $('#confidenceOut').value = `${$('#confidence').value} / 5`;
+}
+
+function editEntry(entry) {
+  editingEntryId = entry.id;
+  $('#climbDate').value = localDateTimeValue(new Date(entry.date));
+  selectWall(String(entry.wall));
+  $('#gradeSelect').value = entry.grade;
+  selectColor(entry.color);
+  selectResult(entry.result);
+  $('#difficulty').value = String(entry.difficulty);
+  $('#confidence').value = String(entry.confidence);
+  $('#difficultyOut').value = `${entry.difficulty} / 5`;
+  $('#confidenceOut').value = `${entry.confidence} / 5`;
+  $('#notes').value = entry.notes;
+  $('#saveClimbBtn').textContent = 'Update climb';
+  $('#cancelEditBtn').classList.remove('hidden');
+  $('#saveMessage').textContent = `Editing ${entry.grade} on wall ${entry.wall}.`;
+  switchToTab('log');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 function setupTabs() {
   $$('.tab').forEach((tab) => {
     tab.addEventListener('click', () => {
@@ -173,7 +220,17 @@ function setupTabs() {
 }
 
 function setupForm() {
-  $('#climbDate').value = localDateTimeValue();
+  setDateTimeToNow();
+
+  $('#resetTimeBtn').addEventListener('click', setDateTimeToNow);
+  $('#climbDate').addEventListener('change', (event) => {
+    if (!event.target.value) setDateTimeToNow();
+  });
+  $('#climbForm').addEventListener('reset', () => requestAnimationFrame(setDateTimeToNow));
+  $('#cancelEditBtn').addEventListener('click', () => {
+    resetEntryForm();
+    $('#saveMessage').textContent = 'Edit canceled.';
+  });
 
   $$('#resultPicker [data-result]').forEach((btn) => {
     btn.addEventListener('click', () => selectResult(btn.dataset.result));
@@ -187,9 +244,11 @@ function setupForm() {
 
   $('#climbForm').addEventListener('submit', (event) => {
     event.preventDefault();
+    if (!$('#climbDate').value) setDateTimeToNow();
+    const existingEntry = entries.find((item) => item.id === editingEntryId);
     const entry = {
-      id: makeId(),
-      createdAt: new Date().toISOString(),
+      id: existingEntry?.id ?? makeId(),
+      createdAt: existingEntry?.createdAt ?? new Date().toISOString(),
       date: new Date($('#climbDate').value).toISOString(),
       wall: Number($('#wallValue').value),
       grade: $('#gradeSelect').value,
@@ -200,13 +259,13 @@ function setupForm() {
       notes: $('#notes').value.trim()
     };
 
-    entries.push(entry);
+    if (existingEntry) entries = entries.map((item) => item.id === entry.id ? entry : item);
+    else entries.push(entry);
     saveEntries();
 
     const msg = $('#saveMessage');
-    msg.textContent = `${entry.grade} on wall ${entry.wall} saved.`;
-    $('#notes').value = '';
-    $('#climbDate').value = localDateTimeValue();
+    msg.textContent = `${entry.grade} on wall ${entry.wall} ${existingEntry ? 'updated' : 'saved'}.`;
+    resetEntryForm();
     setTimeout(() => { msg.textContent = ''; }, 2200);
   });
 }
@@ -234,6 +293,8 @@ function createEntryElement(entry) {
     entries = entries.filter((item) => item.id !== entry.id);
     saveEntries();
   });
+
+  fragment.querySelector('.edit-entry').addEventListener('click', () => editEntry(entry));
 
   return fragment;
 }

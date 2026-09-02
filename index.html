@@ -33,7 +33,10 @@
       <form id="climbForm" class="card stack">
         <div class="field-group">
           <label for="climbDate">Date & time</label>
-          <input id="climbDate" name="date" type="datetime-local" required />
+          <div class="date-time-row">
+            <input id="climbDate" name="date" type="datetime-local" required />
+            <button id="resetTimeBtn" class="secondary compact-button" type="button">Now</button>
+          </div>
         </div>
 
         <div class="field-group">
@@ -86,7 +89,10 @@
           <textarea id="notes" name="notes" rows="3" placeholder="Beta, crux, pump, technique..."></textarea>
         </div>
 
-        <button class="primary save-button" type="submit">Save climb</button>
+        <div class="form-actions">
+          <button id="saveClimbBtn" class="primary save-button" type="submit">Save climb</button>
+          <button id="cancelEditBtn" class="secondary hidden" type="button">Cancel edit</button>
+        </div>
         <p id="saveMessage" class="status-message" aria-live="polite"></p>
       </form>
     </section>
@@ -172,7 +178,10 @@
         <div class="entry-ratings"></div>
         <p class="entry-notes"></p>
       </div>
-      <button class="delete-entry text-button" type="button" aria-label="Delete climb">Delete</button>
+      <div class="entry-actions">
+        <button class="edit-entry text-button" type="button" aria-label="Edit climb">Edit</button>
+        <button class="delete-entry text-button" type="button" aria-label="Delete climb">Delete</button>
+      </div>
     </article>
   </template>
 
