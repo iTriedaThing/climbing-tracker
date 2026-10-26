@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#111827" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Climb Log" />
+  <title>Climb Log</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="app-shell">
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">WALLS 6–19</p>
+        <h1>Climb Log</h1>
+        <span class="muted version-label">v2.0 · Sessions & goals</span>
+      </div>
+      <button id="installBtn" class="secondary hidden" type="button">Install</button>
+    </header>
+
+    <p id="appNotice" class="notice hidden" role="status"></p>
+    <div id="updateNotice" class="notice hidden"><span>An app update is ready.</span> <button id="updateAppBtn" type="button" class="secondary">Reload to update</button></div>
+    <nav class="tabs" aria-label="Main navigation">
+      <button class="tab active" data-tab="log" type="button">Log</button>
+      <button class="tab" data-tab="session" type="button">Session</button>
+      <button class="tab" data-tab="history" type="button">History</button>
+      <button class="tab" data-tab="goals" type="button">Goals</button>
+      <button class="tab" data-tab="settings" type="button">Backup</button>
+    </nav>
+
+    <section id="tab-log" class="panel active">
+      <form id="climbForm" class="card stack">
+        <div class="session-fields">
+          <div class="field-group"><label for="sessionDate">Session day</label><input id="sessionDate" type="date" required /></div>
+          <div class="field-group"><label for="climbNumber">Climb #</label><input id="climbNumber" type="number" min="1" max="999999" step="1" inputmode="numeric" required /></div>
+        </div>
+        <p class="muted field-help">One session per day. Numbers set the order; timestamps are optional details. Inserting a number moves later climbs along.</p>
+        <details class="time-details">
+          <summary>Date & time <span id="timeSummary" class="muted"></span></summary>
+          <div class="field-group">
+            <label for="climbDate">Recorded time</label>
+            <div class="date-time-row">
+              <input id="climbDate" name="date" type="datetime-local" required />
+              <button id="resetTimeBtn" class="secondary compact-button" type="button">Now</button>
+            </div>
+          </div>
+        </details>
+
+        <div class="field-group">
+          <span class="label">Wall</span>
+          <div id="wallPicker" class="button-grid wall-grid" role="group" aria-label="Wall number"></div>
+          <input id="wallValue" name="wall" type="hidden" required />
+        </div>
+
+        <div class="field-group">
+          <label for="gradeSelect">Grade</label>
+          <select id="gradeSelect" name="grade" required></select>
+        </div>
+
+        <div class="field-group">
+          <span class="label">Route color</span>
+          <div id="colorPicker" class="color-grid" role="group" aria-label="Route color"></div>
+          <input id="colorValue" name="color" type="hidden" required />
+        </div>
+
+        <div class="field-group">
+          <label for="resultValue">Outcome</label>
+          <select id="resultValue" required>
+            <option value="sent">Clean send — no hangs or falls</option>
+            <option value="finished">Finished with hangs/falls</option>
+            <option value="dnf">Did not finish (DNF)</option>
+          </select>
+          <label class="check-label"><input id="isProject" type="checkbox" /> Working on this as a project</label>
+          <p class="muted field-help">A project can have any outcome. Only clean sends count toward a send goal.</p>
+        </div>
+
+        <div class="field-group">
+          <div class="range-label-row">
+            <label for="difficulty">How hard did it feel?</label>
+            <output id="difficultyOut" for="difficulty">3 / 5</output>
+          </div>
+          <input id="difficulty" name="difficulty" type="range" min="1" max="5" step="1" value="3" />
+          <div class="range-ends"><span>Easy</span><span>Limit</span></div>
+        </div>
+
+        <div class="field-group">
+          <div class="range-label-row">
+            <label for="confidence">How confident did you feel?</label>
+            <output id="confidenceOut" for="confidence">3 / 5</output>
+          </div>
+          <input id="confidence" name="confidence" type="range" min="1" max="5" step="1" value="3" />
+          <div class="range-ends"><span>Shaky</span><span>Solid</span></div>
+        </div>
+
+        <div class="field-group">
+          <label for="notes">Notes <span class="muted">(optional)</span></label>
+          <textarea id="notes" name="notes" rows="3" placeholder="Beta, crux, pump, technique..."></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button id="saveClimbBtn" class="primary save-button" type="submit">Save climb</button>
+          <button id="cancelEditBtn" class="secondary hidden" type="button">Cancel edit</button>
+        </div>
+        <p id="saveMessage" class="status-message" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section id="tab-session" class="panel">
+      <div class="card stack">
+        <div class="field-group"><label for="viewSessionDate">Session day</label><input id="viewSessionDate" type="date" required /></div>
+        <div class="session-navigation">
+          <button id="previousSession" type="button" class="secondary">Previous</button>
+          <button id="todaySession" type="button" class="secondary">Today</button>
+          <button id="nextSession" type="button" class="secondary">Next</button>
+        </div>
+        <button id="logInSession" type="button" class="primary">Log a climb in this session</button>
+      </div>
+      <div class="summary-grid">
+        <article class="stat-card"><span id="sessionTotal" class="stat">0</span><span>climbs logged</span></article>
+        <article class="stat-card"><span id="sessionSends" class="stat">0</span><span>clean sends</span></article>
+        <article class="stat-card"><span id="sessionFinished" class="stat">0</span><span>finished with hangs/falls</span></article>
+        <article class="stat-card"><span id="sessionHardest" class="stat">—</span><span>hardest clean send</span></article>
+      </div>
+      <div id="sessionGoal" class="card stack" aria-live="polite"></div>
+      <div class="card">
+        <h2 id="sessionHeading">Session climbs</h2>
+        <p id="sessionOutcomes" class="muted body-copy"></p>
+        <div id="sessionEntries" class="entry-list"></div>
+      </div>
+    </section>
+
+    <section id="tab-goals" class="panel">
+      <form id="goalForm" class="card stack">
+        <div><p class="eyebrow">MONTHLY GOALS</p><h2>Your target for each session</h2></div>
+        <div class="field-group"><label for="goalMonth">Month</label><input id="goalMonth" type="month" required /></div>
+        <p id="goalSavedStatus" class="muted field-help"></p>
+        <div class="field-group"><label for="goalCountMode">What counts?</label><select id="goalCountMode"><option value="sent">Clean sends only</option><option value="completed">All finishes, including hangs/falls</option></select></div>
+        <div class="goal-fields">
+          <div class="field-group"><label for="goalTotal">Total per session</label><input id="goalTotal" type="number" min="1" max="999999" required /></div>
+          <div class="field-group"><label for="goalPink">Maximum pinks</label><input id="goalPink" type="number" min="0" max="999999" required /></div>
+          <div class="field-group"><label for="goal10">5.10 or harder</label><input id="goal10" type="number" min="0" max="999999" required /></div>
+          <div class="field-group"><label for="goal11">OR 5.11 or harder</label><input id="goal11" type="number" min="0" max="999999" required /></div>
+        </div>
+        <p class="muted field-help">Meet the total, stay within the pink limit, and meet either harder-grade target. Includes −/+ grades. Repeated climbs count each time. Set a harder-grade target to 0 to turn that option off.</p>
+        <button class="primary" type="submit">Save goal for this month</button>
+        <button id="removeGoal" class="text-button" type="button">Remove this month's goal</button>
+        <p id="goalMessage" class="status-message" aria-live="polite"></p>
+      </form>
+      <div class="card stack"><h2>Session progress this month</h2><div id="monthProgress" aria-live="polite"></div></div>
+    </section>
+
+    <section id="tab-history" class="panel">
+      <div class="card">
+        <div class="section-heading history-heading">
+          <div>
+            <p class="eyebrow">ALL ENTRIES</p>
+            <h2>History</h2>
+          </div>
+          <button id="clearFilters" type="button" class="text-button">Reset filters</button>
+        </div>
+        <div class="filters">
+          <select id="filterWall" aria-label="Filter by wall">
+            <option value="">All walls</option>
+          </select>
+          <select id="filterGrade" aria-label="Filter by grade">
+            <option value="">All grades</option>
+          </select>
+          <select id="filterResult" aria-label="Filter by result">
+            <option value="">All results</option>
+            <option value="sent">Clean send</option><option value="finished">Finished with hangs/falls</option><option value="dnf">DNF</option><option value="hung">Old hang/fall — finish unknown</option><option value="project">Old project — finish unknown</option>
+          </select>
+        </div>
+        <p class="muted field-help">Newest session first; climbs within each session follow their climb number.</p>
+        <div id="historyEntries" class="entry-list empty-state">No climbs logged yet.</div>
+      </div>
+    </section>
+
+    <section id="tab-settings" class="panel">
+      <div class="card stack">
+        <div>
+          <p class="eyebrow">BACKUP & RESTORE</p>
+          <h2>Your data stays on this device</h2>
+          <p class="muted body-copy">Back up climbs, session order, and monthly goals together. Older JSON backups still import. Importing replaces climbs after confirmation; old backups keep your current goals.</p>
+        </div>
+        <button id="exportBtn" type="button" class="primary">Export JSON backup</button>
+        <label class="file-button secondary" for="importFile">Choose JSON backup</label>
+        <input id="importFile" type="file" accept="application/json,.json" hidden />
+        <p id="backupMessage" class="status-message" aria-live="polite"></p>
+      </div>
+
+      <div class="card stack danger-zone">
+        <div>
+          <p class="eyebrow">DEVICE STORAGE</p>
+          <h2>Local data</h2>
+          <p id="storageSummary" class="muted body-copy">0 climbs stored.</p>
+        </div>
+        <button id="deleteAllBtn" type="button" class="danger">Delete all local data</button>
+      </div>
+    </section>
+  </main>
+
+  <template id="entryTemplate">
+    <article class="entry-card">
+      <div class="entry-color"></div>
+      <div class="entry-main">
+        <div class="entry-title-row">
+          <strong class="entry-grade"></strong>
+          <span class="entry-result badge"></span>
+        </div>
+        <div class="entry-meta"></div>
+        <div class="entry-ratings"></div>
+        <p class="entry-notes"></p>
+      </div>
+      <div class="entry-actions">
+        <button class="edit-entry text-button" type="button" aria-label="Edit climb">Edit</button>
+        <button class="delete-entry text-button" type="button" aria-label="Delete climb">Delete</button>
+      </div>
+    </article>
+  </template>
+
+  <script src="model.js" defer></script>
+  <script src="app.js" defer></script>
+</body>
+</html>
