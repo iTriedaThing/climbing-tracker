@@ -1,7 +1,7 @@
 /* Each release caches a complete shell. Updates wait for open tabs to close,
  * or for the user to explicitly reload, to protect unsaved form edits. */
 const CACHE_PREFIX = 'climb-log-';
-const CACHE_NAME = 'climb-log-v3';
+const CACHE_NAME = 'climb-log-v4';
 const APP_SHELL = ['./', './index.html', './styles.css', './model.js', './app.js',
   './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 
@@ -36,3 +36,4 @@ self.addEventListener('fetch', event => {
     }
   })());
 });
+

@@ -1,3 +1,4 @@
+process.env.TZ = 'America/New_York';
 // Run with: TZ=America/New_York node tests/model.test.cjs [path-to-v1-backup.json]
 const assert = require('node:assert/strict');
 const M = require('../model.js');
@@ -61,3 +62,18 @@ if (process.argv[2]) {
   console.log(`Preserved all original fields in ${original.entries.length} real records; v2 backup round-trip passed.`);
 }
 console.log('Model tests passed: migration, ties, reordering, insertion, session moves, statuses, goals, and backups.');
+
+
+// Appending after an early insert uses the maximum, even with gaps/other days.
+const day = '2026-11-19';
+const initial = [1, 4, 10].map(n => ({ ...fixture(`number-${n}`), sessionDate: day, climbNumber: n }));
+initial.push({ ...fixture('other-day'), sessionDate: '2026-11-18', climbNumber: 99 });
+const inserted = M.insertEntry(initial, { ...fixture('new'), sessionDate: day, climbNumber: 4 });
+assert.equal(M.nextNumber(inserted, day), 12);
+const appended = M.appendEntry(inserted, { ...fixture('append'), sessionDate: day, climbNumber: 4 });
+assert.equal(appended.find(e => e.id === 'append').climbNumber, 12);
+assert.equal(appended.find(e => e.id === 'number-4').climbNumber, 5);
+assert.equal(appended.find(e => e.id === 'other-day').climbNumber, 99);
+assert.throws(() => M.insertEntry(initial, initial[0]));
+assert.throws(() => M.appendEntry(initial, initial[0]));
+console.log('Explicit insert/append tests passed.');

@@ -1,3 +1,16 @@
+## v2.0.1 — explicit insertion and automatic next number
+
+Normal logging always uses the highest saved climb number for the selected
+session plus one, recalculated at save time. Use **Insert climb** to enter a
+missed climb at an earlier number, or **Insert before** on a session/history
+card. Later climbs shift up; after inserting, editing, or canceling, the form
+returns to normal logging at the session maximum plus one. Editing still moves
+an existing record; insertion always creates a new record. Other sessions,
+goals, IDs, and backup formats are preserved.
+
+Example: with climbs #1–#10, insert at #4. The old #4–#10 become #5–#11,
+and the next ordinary climb is #12. Gaps do not change this rule.
+
 # Climb Log v2.0 — sessions, outcomes, and monthly goals
 
 A static, local-first iPhone climbing tracker. Continue using the same GitHub
@@ -42,7 +55,7 @@ any date, navigate to previous/next logged sessions, or jump to today. Sessions
 show logged climbs, clean sends, finishes with hangs/falls, DNFs, and hardest
 clean send. History groups by session, newest day first.
 
-Every entry has a **session day** and an editable positive integer **climb #**.
+Every entry has a **session day** and a positive integer **climb #**, editable in Insert or Edit mode.
 New entries default to the highest number in that session plus one. All logged
 outcomes advance this number, including DNFs. It measures the climb/attempt
 number, not the clean-send count. Within a session, number order takes priority
@@ -134,3 +147,14 @@ original record fields survive migration and a version 2 export/import cycle.
   200 records intact, then reloading offline and saving another climb offline.
 - This environment could not run WebKit due to missing system dependencies;
   a physical iPhone/Safari check remains the final device-specific check.
+
+
+### v2.0.1 regression tests
+
+Run `npm ci` once, then `npm test`. Node.js 18 or newer is required for the
+DOM test dependency. These are development-only dependencies; GitHub Pages
+still serves the static files without a build step.
+
+The UI regression uses the actual HTML and handlers to test early insertion,
+the following ordinary save (including a deliberately stale counter), editing,
+canceling, different sessions, and failed storage writes followed by retry.

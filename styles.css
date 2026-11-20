@@ -264,3 +264,9 @@ button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-v
   .card { padding: 12px; }
   .tab { font-size: .72rem; }
 }
+
+
+/* Numbering is automatic during normal logging and editable in Insert/Edit. */
+.insert-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+input[readonly] { color: var(--accent); }
+.entry-actions .insert-entry { max-width: 64px; font-size: .75rem; }
