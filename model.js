@@ -92,7 +92,8 @@
   }
 
   function nextNumber(entries, day) {
-    return Math.max(0, ...entries.filter(entry => entry.sessionDate === day).map(entry => entry.climbNumber)) + 1;
+    return entries.reduce((highest, entry) => entry.sessionDate === day
+      ? Math.max(highest, entry.climbNumber) : highest, 0) + 1;
   }
 
   // Inserting into an occupied number shifts later climbs. Moving an existing
@@ -116,6 +117,21 @@
     });
     updated.push({ ...incoming });
     return normalizeEntries(updated);
+  }
+
+  // Explicit creation paths never reuse an existing record ID. Append ignores
+  // a stale form number; insert intentionally makes room at the chosen number.
+  function insertEntry(entries, incoming) {
+    if (entries.some(entry => entry.id === incoming.id)) {
+      throw new Error('Insert requires a new climb. Use Edit to change an existing climb.');
+    }
+    return putEntry(entries, incoming);
+  }
+
+  function appendEntry(entries, incoming) {
+    return insertEntry(entries, {
+      ...incoming, climbNumber: nextNumber(entries, incoming.sessionDate)
+    });
   }
 
   function defaultGoal() {
@@ -165,8 +181,9 @@
   }
 
   const api = { VERSION, LEGACY_KEY, STATE_KEY, RESULTS, WALLS, GRADES, COLORS,
-    localDay, validDay, validateEntry, normalizeEntries, nextNumber, putEntry,
+    localDay, validDay, validateEntry, normalizeEntries, nextNumber, putEntry, insertEntry, appendEntry,
     defaultGoal, validateGoal, normalizeState, parseBackup, goalProgress, gradeRank };
   root.ClimbLog = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
+

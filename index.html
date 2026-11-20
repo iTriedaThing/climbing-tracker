@@ -18,7 +18,7 @@
       <div>
         <p class="eyebrow">WALLS 6–19</p>
         <h1>Climb Log</h1>
-        <span class="muted version-label">v2.0 · Sessions & goals</span>
+        <span class="muted version-label">v2.0.1 · Sessions & goals</span>
       </div>
       <button id="installBtn" class="secondary hidden" type="button">Install</button>
     </header>
@@ -37,8 +37,13 @@
       <form id="climbForm" class="card stack">
         <div class="session-fields">
           <div class="field-group"><label for="sessionDate">Session day</label><input id="sessionDate" type="date" required /></div>
-          <div class="field-group"><label for="climbNumber">Climb #</label><input id="climbNumber" type="number" min="1" max="999999" step="1" inputmode="numeric" required /></div>
+          <div class="field-group"><label for="climbNumber">Climb #</label><input id="climbNumber" type="number" min="1" max="999999" step="1" inputmode="numeric" readonly required /></div>
         </div>
+        <div class="insert-controls">
+          <button id="insertClimbBtn" type="button" class="secondary">Insert climb</button>
+          <button id="cancelInsertBtn" type="button" class="secondary hidden">Cancel insert</button>
+        </div>
+        <p id="numberHelp" class="muted field-help" aria-live="polite"></p>
         <p class="muted field-help">One session per day. Numbers set the order; timestamps are optional details. Inserting a number moves later climbs along.</p>
         <details class="time-details">
           <summary>Date & time <span id="timeSummary" class="muted"></span></summary>
@@ -217,6 +222,7 @@
         <p class="entry-notes"></p>
       </div>
       <div class="entry-actions">
+        <button class="insert-entry text-button" type="button" aria-label="Insert a climb before this one">Insert before</button>
         <button class="edit-entry text-button" type="button" aria-label="Edit climb">Edit</button>
         <button class="delete-entry text-button" type="button" aria-label="Delete climb">Delete</button>
       </div>
@@ -227,3 +233,4 @@
   <script src="app.js" defer></script>
 </body>
 </html>
+

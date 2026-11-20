@@ -1,4 +1,4 @@
-/* Climb Log v2.0 — UI, persistence, and offline update handling.
+/* Climb Log v2.0.1 — UI, persistence, and offline update handling.
  * model.js owns migration, ordering, validation, and goal calculations.
  */
 'use strict';
@@ -10,6 +10,7 @@ const $$ = selector => [...document.querySelectorAll(selector)];
 let state = { version: M.VERSION, entries: [], goals: {} };
 let storageBlocked = false;
 let editingEntryId = null;
+let insertingClimb = false;
 let deferredInstallPrompt = null;
 let waitingWorker = null;
 
@@ -155,7 +156,7 @@ function setTimeForSession() {
 }
 
 function refreshNextNumber() {
-  if (!editingEntryId) $('#climbNumber').value = M.nextNumber(state.entries, $('#sessionDate').value);
+  if (!editingEntryId && !insertingClimb) $('#climbNumber').value = M.nextNumber(state.entries, $('#sessionDate').value);
 }
 
 function refreshRatings() {
@@ -164,6 +165,11 @@ function refreshRatings() {
 
 function resetEntryForm() {
   editingEntryId = null;
+  insertingClimb = false;
+  $('#climbNumber').readOnly = true;
+  $('#insertClimbBtn').classList.remove('hidden');
+  $('#cancelInsertBtn').classList.add('hidden');
+  $('#numberHelp').textContent = 'Next climb = the highest saved number in this session + 1. Use Insert climb to add a missed climb earlier.';
   $('#notes').value = '';
   $('#isProject').checked = false;
   setResult('sent');
@@ -174,7 +180,29 @@ function resetEntryForm() {
   refreshRatings();
 }
 
+function startInsert(day = $('#sessionDate').value, number = null) {
+  if (editingEntryId && !confirm('Discard the unsaved edit and insert a new climb instead?')) return;
+  $('#sessionDate').value = day;
+  // Leave route details in place, but never carry an existing ID into insertion.
+  resetEntryForm();
+  insertingClimb = true;
+  $('#climbNumber').readOnly = false;
+  if (number !== null) $('#climbNumber').value = number;
+  $('#saveClimbBtn').textContent = 'Insert climb';
+  $('#insertClimbBtn').classList.add('hidden');
+  $('#cancelInsertBtn').classList.remove('hidden');
+  $('#numberHelp').textContent = 'Choose the number for this new climb. Climbs at or after it move up one. After saving, the counter returns to the end of the session.';
+  $('#saveMessage').textContent = 'Inserting a new climb.';
+  switchToTab('log');
+  $('#climbNumber').focus();
+}
+
 function editEntry(entry) {
+  insertingClimb = false;
+  $('#climbNumber').readOnly = false;
+  $('#insertClimbBtn').classList.add('hidden');
+  $('#cancelInsertBtn').classList.add('hidden');
+  $('#numberHelp').textContent = 'Editing this saved climb. Changing its number moves it within the session; it does not add another climb.';
   editingEntryId = entry.id;
   $('#sessionDate').value = entry.sessionDate;
   $('#climbNumber').value = entry.climbNumber;
@@ -199,9 +227,12 @@ function editEntry(entry) {
 function setupForm() {
   $('#sessionDate').value = M.localDay();
   resetEntryForm();
+  $('#insertClimbBtn').addEventListener('click', () => startInsert());
+  $('#cancelInsertBtn').addEventListener('click', () => { resetEntryForm(); $('#saveMessage').textContent = 'Insert canceled.'; });
   $('#sessionDate').addEventListener('change', () => {
     if (!M.validDay($('#sessionDate').value)) return;
     if (!editingEntryId) {
+      if (insertingClimb) $('#climbNumber').value = M.nextNumber(state.entries, $('#sessionDate').value);
       refreshNextNumber();
       setTimeForSession();
     } else {
@@ -235,7 +266,9 @@ function setupForm() {
         date: previous && localDateTimeValue(new Date(previous.date)) === $('#climbDate').value
           ? previous.date : new Date($('#climbDate').value).toISOString(),
         sessionDate: $('#sessionDate').value,
-        climbNumber: Number($('#climbNumber').value),
+        climbNumber: !previous && !insertingClimb
+          ? M.nextNumber(state.entries, $('#sessionDate').value)
+          : Number($('#climbNumber').value),
         wall: Number($('#wallValue').value),
         grade: $('#gradeSelect').value,
         color: $('#colorValue').value,
@@ -245,11 +278,13 @@ function setupForm() {
         confidence: Number($('#confidence').value),
         notes: $('#notes').value.trim()
       };
-      commitState({ ...state, entries: M.putEntry(state.entries, entry) });
+      const saveEntry = previous ? M.putEntry : insertingClimb ? M.insertEntry : M.appendEntry;
+      const action = previous ? 'updated' : insertingClimb ? 'inserted' : 'saved';
+      commitState({ ...state, entries: saveEntry(state.entries, entry) });
       $('#viewSessionDate').value = entry.sessionDate;
       renderAll();
       resetEntryForm();
-      $('#saveMessage').textContent = `Climb #${entry.climbNumber} ${previous ? 'updated' : 'saved'}. Next: #${$('#climbNumber').value}.`;
+      $('#saveMessage').textContent = `Climb #${entry.climbNumber} ${action}. Next: #${$('#climbNumber').value}.`;
       if (waitingWorker) showUpdateNotice();
     } catch (error) {
       $('#saveMessage').textContent = `Not saved: ${error.message}`;
@@ -273,6 +308,7 @@ function createEntryElement(entry) {
   const notes = fragment.querySelector('.entry-notes');
   if (entry.notes) notes.textContent = entry.notes;
   else notes.remove();
+  fragment.querySelector('.insert-entry').addEventListener('click', () => startInsert(entry.sessionDate, entry.climbNumber));
   fragment.querySelector('.edit-entry').addEventListener('click', () => editEntry(entry));
   fragment.querySelector('.delete-entry').addEventListener('click', () => {
     if (!confirm(`Delete climb #${entry.climbNumber}, ${entry.grade} on wall ${entry.wall}? Other climb numbers will stay the same.`)) return;
@@ -359,7 +395,7 @@ function setupSessions() {
     });
   }
   $('#logInSession').addEventListener('click', () => {
-    if (editingEntryId && !confirm('Discard the current unsaved edit?')) return;
+    if ((editingEntryId || insertingClimb) && !confirm('Discard the current unsaved edit or insertion?')) return;
     $('#sessionDate').value = $('#viewSessionDate').value;
     resetEntryForm();
     $('#saveMessage').textContent = '';
@@ -512,6 +548,7 @@ function setupBackup() {
 }
 
 function renderAll() {
+  refreshNextNumber();
   renderSession();
   renderHistory();
   renderMonth();
@@ -571,3 +608,4 @@ setupGoals();
 setupBackup();
 setupPwa();
 renderAll();
+
